@@ -10,7 +10,8 @@ browser of whoever uploads a file. Static site, deployable to GitHub Pages.
 ## Status
 
 Framework is complete: upload, retailer selection/auto-detect, preview,
-validation, CSV download, access gate. **Per-retailer column mappings are
+validation, CSV download, combined-dataset download across multiple
+retailers in one session, access gate. **Per-retailer column mappings are
 mostly still placeholders** — see "Adding a retailer" below.
 
 - **Real, tested parsers**:
@@ -56,6 +57,28 @@ There is no "Push to Snowflake" button in this version by design — v1 ships
 clean CSV output only, loaded into Snowflake separately. This keeps the app
 fully static (no server-held credentials to manage). It can be added later
 as a small serverless function without changing the rest of the app.
+
+## Combined dataset (multiple retailers in one session)
+
+Uploading and loading each retailer's file into Snowflake one at a time
+(upload → download → repeat → merge manually) got tedious with 6+
+retailers a week, so the app now supports both:
+
+- **Per-file download** (unchanged) — process one file, click "Download
+  CSV", get just that retailer's normalized rows.
+- **Combined download** — after reviewing a file (0 validation issues,
+  same gate as the per-file download), click "Add to combined dataset"
+  instead. It's added to a running list (`src/components/BatchPanel.tsx`,
+  state lives in `App.tsx`) that persists across uploads in the same
+  browser tab. Upload the next retailer's file the same way — the batch
+  keeps accumulating. "Download combined CSV" concatenates every added
+  retailer's rows into one file, ready to `MERGE` into Snowflake in a
+  single load instead of one per retailer.
+
+Adding a retailer that's already in the batch **replaces** its entry
+rather than duplicating it (e.g. if you fix a file and re-add it). The
+batch is in-memory only — it resets on page refresh, matching the rest of
+the app's "nothing persists, nothing leaves the browser" design.
 
 ## Local development
 

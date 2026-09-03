@@ -4,6 +4,7 @@ import { RetailerSelect } from './components/RetailerSelect'
 import { PreviewTable } from './components/PreviewTable'
 import { ValidationErrors } from './components/ValidationErrors'
 import { DownloadButton } from './components/DownloadButton'
+import { BatchPanel, type BatchItem } from './components/BatchPanel'
 import { RETAILER_PARSERS, autoDetect, getParser } from './retailers/registry'
 import { RetailerFormatError, type RawSheet } from './retailers/types'
 import { parseUploadedFile } from './lib/fileParse'
@@ -15,6 +16,7 @@ export function App() {
   const [sheet, setSheet] = useState<RawSheet | null>(null)
   const [retailerKey, setRetailerKey] = useState<string | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
+  const [batch, setBatch] = useState<BatchItem[]>([])
 
   const suggestion = useMemo(() => (sheet ? autoDetect(sheet) : null), [sheet])
 
@@ -49,6 +51,20 @@ export function App() {
     () => (normalizedRows && parser ? validateRows(normalizedRows, parser.skuLevel) : []),
     [normalizedRows, parser],
   )
+
+  function handleAddToBatch() {
+    if (!normalizedRows || !parser) return
+    setBatch((prev) => [
+      ...prev.filter((item) => item.retailerKey !== parser.key), // replace any existing entry for this retailer
+      { retailerKey: parser.key, retailerLabel: parser.label, fileName: sheet?.fileName ?? '', rows: normalizedRows },
+    ])
+  }
+
+  function handleRemoveFromBatch(retailerKey: string) {
+    setBatch((prev) => prev.filter((item) => item.retailerKey !== retailerKey))
+  }
+
+  const alreadyInBatch = parser ? batch.some((item) => item.retailerKey === parser.key) : false
 
   return (
     <div className="app">
@@ -86,9 +102,25 @@ export function App() {
           <h2>3. Review and download</h2>
           <ValidationErrors issues={validationIssues} />
           <PreviewTable rows={normalizedRows} />
-          <DownloadButton rows={normalizedRows} retailerKey={parser.key} disabled={validationIssues.length > 0} />
+          <div className="download-actions">
+            <DownloadButton rows={normalizedRows} retailerKey={parser.key} disabled={validationIssues.length > 0} />
+            <button
+              type="button"
+              className="add-to-batch-button"
+              onClick={handleAddToBatch}
+              disabled={validationIssues.length > 0}
+            >
+              {alreadyInBatch ? 'Update in combined dataset' : 'Add to combined dataset'}
+            </button>
+          </div>
+          <p className="batch-hint">
+            Uploading multiple retailers this week? Add each one to the combined dataset below, then upload the next
+            file here — the combined download stays available until you refresh the page.
+          </p>
         </section>
       )}
+
+      <BatchPanel batch={batch} onRemove={handleRemoveFromBatch} />
     </div>
   )
 }

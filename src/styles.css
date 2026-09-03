@@ -150,6 +150,54 @@ header p {
   cursor: not-allowed;
 }
 
+.download-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.add-to-batch-button {
+  background: #fff;
+  color: #3366ff;
+  border: 1px solid #3366ff;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.add-to-batch-button:disabled {
+  color: #999;
+  border-color: #ccc;
+  cursor: not-allowed;
+}
+
+.batch-hint {
+  color: #777;
+  font-size: 13px;
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+
+.batch-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+}
+
+.batch-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.batch-list li:last-child {
+  border-bottom: none;
+}
+
 .gate {
   min-height: 100vh;
   display: flex;
