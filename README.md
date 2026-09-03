@@ -75,6 +75,14 @@ retailers a week, so the app now supports both:
   retailer's rows into one file, ready to `MERGE` into Snowflake in a
   single load instead of one per retailer.
 
+`BatchPanel` always renders at the top of the page, above the upload
+step — including an explanation and empty state before anything's been
+added — rather than only appearing once you've added a first file. It
+was originally placed below the preview table and only shown once
+non-empty; moved up front since the whole point is a feature people
+should notice before they need it, not stumble onto after scrolling
+past a 50-row table.
+
 Adding a retailer that's already in the batch **replaces** its entry
 rather than duplicating it (e.g. if you fix a file and re-add it). The
 batch is in-memory only — it resets on page refresh, matching the rest of

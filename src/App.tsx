@@ -73,6 +73,8 @@ export function App() {
         <p>Upload a retailer sell-through file, confirm the retailer, and download it in the standard schema.</p>
       </header>
 
+      <BatchPanel batch={batch} onRemove={handleRemoveFromBatch} />
+
       <section className="step">
         <h2>1. Upload file</h2>
         <UploadZone onFileSelected={handleFileSelected} fileName={sheet?.fileName ?? null} />
@@ -113,14 +115,8 @@ export function App() {
               {alreadyInBatch ? 'Update in combined dataset' : 'Add to combined dataset'}
             </button>
           </div>
-          <p className="batch-hint">
-            Uploading multiple retailers this week? Add each one to the combined dataset below, then upload the next
-            file here — the combined download stays available until you refresh the page.
-          </p>
         </section>
       )}
-
-      <BatchPanel batch={batch} onRemove={handleRemoveFromBatch} />
     </div>
   )
 }
