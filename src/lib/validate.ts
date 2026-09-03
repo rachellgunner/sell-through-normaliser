@@ -46,11 +46,11 @@ export function validateRows(rows: NormalizedRow[], skuLevel: boolean): Validati
       })
     }
 
-    if (row.CHANNEL !== 'Online' && row.CHANNEL !== 'Store' && row.CHANNEL !== 'Unknown') {
+    if (row.CHANNEL !== 'Online' && row.CHANNEL !== 'Store' && row.CHANNEL !== 'Unknown' && row.CHANNEL !== 'Combined') {
       issues.push({
         rowIndex,
         field: 'CHANNEL',
-        message: `CHANNEL must be "Online", "Store", or "Unknown", got "${row.CHANNEL}"`,
+        message: `CHANNEL must be "Online", "Store", "Unknown", or "Combined", got "${row.CHANNEL}"`,
       })
     }
 
@@ -67,6 +67,14 @@ export function validateRows(rows: NormalizedRow[], skuLevel: boolean): Validati
         rowIndex,
         field: 'STORE_LOCATION',
         message: `Unknown-channel rows must have STORE_LOCATION and REGION set to "Unknown" too`,
+      })
+    }
+
+    if (row.CHANNEL === 'Combined' && (row.STORE_LOCATION !== 'Combined' || row.REGION !== 'Combined')) {
+      issues.push({
+        rowIndex,
+        field: 'STORE_LOCATION',
+        message: `Combined-channel rows must have STORE_LOCATION and REGION set to "Combined" too`,
       })
     }
   })

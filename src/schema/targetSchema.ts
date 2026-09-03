@@ -1,12 +1,18 @@
 // The normalized output schema every retailer parser must produce.
 // See project spec: one row per (product/store, week) sell-through record.
 
-// "Unknown" added beyond the original spec: some retailers (confirmed so
-// far: Anthropologie) give no channel signal at all — one blended total
-// per product, no Store/Web split, nothing to infer it from. Forcing a
-// guess into "Online" or "Store" would be less honest than saying we
-// don't know — see README "Open provisional decisions".
-export type Channel = 'Online' | 'Store' | 'Unknown'
+// "Unknown" and "Combined" added beyond the original spec, for two
+// different flavours of "not split by channel":
+// - "Unknown": no channel signal anywhere in the source (confirmed so
+//   far: Anthropologie) — no Store/Web split, nothing to infer one from.
+// - "Combined": the source DOES report a real Store/Web split (units),
+//   but not at a grain we can attach to revenue too (confirmed so far:
+//   Oliver Bonas, where revenue is only reported monthly and already
+//   blended across channels) — so the two channels' real numbers are
+//   deliberately merged into one row rather than guessed apart.
+// Forcing either case into "Online" or "Store" would overstate certainty
+// we don't have — see README "Open provisional decisions".
+export type Channel = 'Online' | 'Store' | 'Unknown' | 'Combined'
 
 export interface NormalizedRow {
   RETAILER: string

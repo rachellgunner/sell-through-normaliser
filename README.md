@@ -408,7 +408,7 @@ could be tested now, but the underlying question is explicitly still open
   detail, so a future product-level version wouldn't need to rebuild
   that part.
 - **Oliver Bonas: `PERIOD` is `"MONTH"`, and `CHANNEL`/`STORE_LOCATION`/
-  `REGION` are placeholders.** Same underlying problem as Selfridges,
+  `REGION` are `"Combined"`.** Same underlying problem as Selfridges,
   on a different axis: Oliver Bonas reports units genuinely at
   product+week+channel (Store vs Web) detail, but revenue only once per
   product per month, already blended across both channels. Explicitly
@@ -418,26 +418,29 @@ could be tested now, but the underlying question is explicitly still open
   Selfridges decision. Unlike Selfridges, `PRODUCT_TITLE` is real here
   (Oliver Bonas's file is genuinely SKU-level), so only the
   time/channel axis is collapsed, not the product axis.
-  `CHANNEL: "Store"` / `STORE_LOCATION`/`REGION: "All Stores"` are a
-  placeholder pending a conversation with the business about whether to
-  instead split into Store/Web rows with revenue allocated by each
-  channel's real unit share for that product — more defensible than the
-  Selfridges case (same product/price in both channels, not different
-  products), but still an allocation, not a directly reported figure.
-  The weekly Store/Web unit detail is discarded (summed into the month
-  total) in the meantime, same pattern as Selfridges' per-SKU units.
-  Kept as `"Store"` rather than `"Unknown"` (unlike Anthropologie, below)
-  because there's real, consistent directional signal in the source file
-  — the weekly unit split shows every product at 74–99% store mix — even
-  though it can't be attached to the blended monthly revenue figure.
+  `CHANNEL`/`STORE_LOCATION`/`REGION` are all `"Combined"` — deliberately
+  chosen over `"Unknown"` because we *do* know it's a real blend of
+  Store+Web (the discarded weekly unit split shows every product at
+  74–99% store mix), unlike Anthropologie below where there's no signal
+  at all. `"Combined"` reflects "we know both channels contributed, just
+  not how much revenue each one"; `"Unknown"` would understate what we
+  actually know here. This is a placeholder pending a conversation with
+  the business about whether to instead split into separate Store/Web
+  rows with revenue allocated by each channel's real unit share for that
+  product — more defensible than the Selfridges case (same product/price
+  in both channels, not different products), but still an allocation,
+  not a directly reported figure, so explicitly deferred rather than
+  done silently. The weekly Store/Web unit detail is discarded (summed
+  into the month total) in the meantime, same pattern as Selfridges'
+  per-SKU units.
 - **Anthropologie: `CHANNEL`/`STORE_LOCATION`/`REGION` are `"Unknown"`.**
   Unlike every other retailer, Anthropologie's file has zero channel
   signal at all — no Store/Web split anywhere, nothing to infer one
   from. Forcing a guess into `"Online"` or `"Store"` would be less
-  honest than saying we don't know, so `"Unknown"` was added as a third
-  schema value (2026-09-03) rather than defaulting to one of the other
-  two. If Anthropologie ever starts reporting a channel breakdown, this
-  should switch to a real value like every other retailer.
+  honest than saying we don't know, so `"Unknown"` was added as a schema
+  value (2026-09-03) rather than defaulting to one of the other two. If
+  Anthropologie ever starts reporting a channel breakdown, this should
+  switch to a real value like every other retailer.
 
 ## Validation rules
 
@@ -450,9 +453,10 @@ Applied to every normalized row before download is enabled
   some retailers report net-negative weeks where returns exceed sales for
   a given SKU/store, e.g. John Lewis)
 - `PRODUCT_TITLE` blank is only valid for retailers with `skuLevel: false`
-- `CHANNEL` must be `Online`, `Store`, or `Unknown`; `Online` rows must
-  have `STORE_LOCATION`/`REGION` set to `Online`, and `Unknown` rows must
-  have them set to `Unknown`
+- `CHANNEL` must be `Online`, `Store`, `Unknown`, or `Combined`; `Online`
+  rows must have `STORE_LOCATION`/`REGION` set to `Online`, `Unknown`
+  rows must have them set to `Unknown`, and `Combined` rows must have
+  them set to `Combined`
 
 If a file is missing required source columns entirely, the retailer's
 `parse()` should throw before any rows are produced, rather than

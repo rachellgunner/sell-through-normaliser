@@ -114,11 +114,12 @@ function parseSheet(sheetName: string, grid: unknown[][]): ParsedRow[] {
       SALES_UNITS: monthUnits,
       // PROVISIONAL: revenue is only reported monthly and blended across
       // Store+Web (no way to split it by channel without estimating) — see
-      // README "Open provisional decisions". CHANNEL/STORE_LOCATION/REGION
-      // here are a placeholder pending a decision with the business.
-      CHANNEL: 'Store',
-      STORE_LOCATION: 'All Stores',
-      REGION: 'All Stores',
+      // README "Open provisional decisions". "Combined" (not "Store") since
+      // the real weekly Store/Web unit split above confirms this is a
+      // genuine blend of both channels, not a store-only figure.
+      CHANNEL: 'Combined',
+      STORE_LOCATION: 'Combined',
+      REGION: 'Combined',
       PERIOD: 'MONTH',
     })
   })
