@@ -181,21 +181,6 @@ header p {
   margin-bottom: 16px;
 }
 
-.batch-panel {
-  border: 1px solid #c7d3ff;
-  background: #f7f9ff;
-}
-
-.batch-empty {
-  color: #777;
-  font-style: italic;
-  margin-bottom: 0;
-}
-
-.batch-summary {
-  margin-bottom: 8px;
-}
-
 .batch-list {
   list-style: none;
   padding: 0;

@@ -75,13 +75,14 @@ retailers a week, so the app now supports both:
   retailer's rows into one file, ready to `MERGE` into Snowflake in a
   single load instead of one per retailer.
 
-`BatchPanel` always renders at the top of the page, above the upload
-step — including an explanation and empty state before anything's been
-added — rather than only appearing once you've added a first file. It
-was originally placed below the preview table and only shown once
-non-empty; moved up front since the whole point is a feature people
-should notice before they need it, not stumble onto after scrolling
-past a 50-row table.
+The "Download CSV"/"Add to combined dataset" buttons sit right after
+validation, *above* the preview table (`App.tsx`) — not below a
+potentially 50-row table, where they'd be easy to miss before moving on
+to the next upload. The explanatory hint sits with them, in the same
+spot. `BatchPanel` (`src/components/BatchPanel.tsx`) itself only renders
+once at least one file has been added — it isn't shown as an empty box
+up front, since the buttons being above the table already make the
+feature hard to miss without needing a permanently-visible callout.
 
 Adding a retailer that's already in the batch **replaces** its entry
 rather than duplicating it (e.g. if you fix a file and re-add it). The
