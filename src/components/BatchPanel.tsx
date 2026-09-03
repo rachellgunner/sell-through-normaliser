@@ -25,11 +25,7 @@ export function BatchPanel({ batch, onRemove }: BatchPanelProps) {
   return (
     <section className="step batch-panel">
       <h2>Combined dataset</h2>
-      <p className="batch-explainer">
-        Processing more than one retailer? Review and confirm each file below as usual, then click{' '}
-        <strong>"Add to combined dataset"</strong> — everything you add here can be downloaded together as a single
-        file, ready for one Snowflake load instead of one per retailer.
-      </p>
+      <p className="batch-explainer">Doing more than one retailer? Add each one below to download them all together.</p>
 
       {batch.length === 0 ? (
         <p className="batch-empty">No files added yet.</p>

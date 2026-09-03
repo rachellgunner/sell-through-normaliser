@@ -155,6 +155,7 @@ header p {
   gap: 12px;
   align-items: center;
   flex-wrap: wrap;
+  margin-bottom: 16px;
 }
 
 .add-to-batch-button {

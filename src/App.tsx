@@ -103,7 +103,6 @@ export function App() {
         <section className="step">
           <h2>3. Review and download</h2>
           <ValidationErrors issues={validationIssues} />
-          <PreviewTable rows={normalizedRows} />
           <div className="download-actions">
             <DownloadButton rows={normalizedRows} retailerKey={parser.key} disabled={validationIssues.length > 0} />
             <button
@@ -115,6 +114,7 @@ export function App() {
               {alreadyInBatch ? 'Update in combined dataset' : 'Add to combined dataset'}
             </button>
           </div>
+          <PreviewTable rows={normalizedRows} />
         </section>
       )}
     </div>
