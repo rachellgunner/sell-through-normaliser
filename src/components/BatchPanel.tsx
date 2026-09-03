@@ -25,7 +25,6 @@ export function BatchPanel({ batch, onRemove }: BatchPanelProps) {
   return (
     <section className="step batch-panel">
       <h2>Combined dataset</h2>
-      <p className="batch-explainer">Doing more than one retailer? Add each one below to download them all together.</p>
 
       {batch.length === 0 ? (
         <p className="batch-empty">No files added yet.</p>

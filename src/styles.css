@@ -174,15 +174,16 @@ header p {
   cursor: not-allowed;
 }
 
+.batch-hint {
+  color: #777;
+  font-size: 13px;
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
 .batch-panel {
   border: 1px solid #c7d3ff;
   background: #f7f9ff;
-}
-
-.batch-explainer {
-  color: #444;
-  font-size: 14px;
-  margin-top: 0;
 }
 
 .batch-empty {
