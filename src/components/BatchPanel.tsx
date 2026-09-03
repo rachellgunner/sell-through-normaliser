@@ -25,6 +25,10 @@ export function BatchPanel({ batch, onRemove }: BatchPanelProps) {
   return (
     <section className="step batch-panel">
       <h2>Combined dataset</h2>
+      <p className="batch-hint">
+        Uploading multiple retailers this week? Add each one to the combined dataset below, then upload the next
+        file here — the combined download stays available until you refresh the page.
+      </p>
 
       {batch.length === 0 ? (
         <p className="batch-empty">No files added yet.</p>
