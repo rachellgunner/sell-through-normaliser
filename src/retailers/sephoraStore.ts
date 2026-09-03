@@ -3,7 +3,7 @@ import { RetailerFormatError } from './types'
 import type { ParsedRow } from '../schema/targetSchema'
 import { findHeaderRowIndex, cellToString, discoverColumnGroups, findSubColumnOffset } from '../lib/rawSheet'
 import { weekEndingFromIsoYearWeek, deriveDateFields } from '../lib/dateUtils'
-import { parseCurrencyToNumber, roundToPence } from '../lib/currency'
+import { parseCurrencyToNumber, parseIntegerUnits, roundToPence } from '../lib/currency'
 
 const LABEL = 'Sephora'
 const SHEET_NAME = 'Weekly Sales By Product'
@@ -123,8 +123,8 @@ export const sephoraStore: RetailerParser = {
         const salesRaw = cellToString(row[store.salesCol])
         if (unitsRaw === '' && salesRaw === '') continue
 
-        const salesUnits = unitsRaw === '' ? 0 : Number(unitsRaw)
-        if (!Number.isFinite(salesUnits) || !Number.isInteger(salesUnits)) {
+        const salesUnits = unitsRaw === '' ? 0 : parseIntegerUnits(unitsRaw)
+        if (salesUnits === null) {
           throw new RetailerFormatError(
             `${LABEL} row ${rowNumber} (${store.storeName}): expected a whole number for "Units Sold", got "${unitsRaw}"`,
           )

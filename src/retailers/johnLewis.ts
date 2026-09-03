@@ -3,7 +3,7 @@ import { RetailerFormatError } from './types'
 import type { ParsedRow } from '../schema/targetSchema'
 import { findHeaderRowIndex, gridRowsFromHeader } from '../lib/rawSheet'
 import { parseDDMMYYYY, weekEndingFromSundayWeekStart, deriveDateFields } from '../lib/dateUtils'
-import { parseCurrencyToNumber, roundToPence } from '../lib/currency'
+import { parseCurrencyToNumber, parseIntegerUnits, roundToPence } from '../lib/currency'
 
 const LABEL = 'John Lewis'
 const ONLINE_BRANCH_NAME = 'John Lewis.com'
@@ -32,8 +32,8 @@ function deriveRegion(branchName: string): string {
 }
 
 function parseIntStrict(raw: string, rowNumber: number, field: string): number {
-  const value = Number(raw)
-  if (!Number.isFinite(value) || !Number.isInteger(value)) {
+  const value = parseIntegerUnits(raw)
+  if (value === null) {
     throw new RetailerFormatError(`${LABEL} row ${rowNumber}: expected a whole number for "${field}", got "${raw}"`)
   }
   return value

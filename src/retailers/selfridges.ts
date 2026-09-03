@@ -3,7 +3,7 @@ import { RetailerFormatError } from './types'
 import type { ParsedRow } from '../schema/targetSchema'
 import { findHeaderRowIndex, cellToString, discoverColumnGroups, findSubColumnOffset, groupRunsByLabel } from '../lib/rawSheet'
 import { weekEndingFromIsoYearWeek, deriveDateFields, mondayOfWeek } from '../lib/dateUtils'
-import { parseCurrencyToNumber, roundToPence } from '../lib/currency'
+import { parseCurrencyToNumber, parseIntegerUnits, roundToPence } from '../lib/currency'
 
 const LABEL = 'Selfridges'
 const REVENUE_SHEET = 'Sales By WK'
@@ -146,9 +146,9 @@ function parseUnitsByStoreWeek(grid: unknown[][]): Map<string, number> {
       let sum = 0
       for (const productRow of productRows) {
         const raw = cellToString(productRow[absoluteCol])
-        const value = raw === '' ? 0 : Number(raw)
-        if (!Number.isFinite(value)) {
-          throw new RetailerFormatError(`${LABEL}: "${UNITS_SHEET}" — expected a number for units, got "${raw}"`)
+        const value = raw === '' ? 0 : parseIntegerUnits(raw)
+        if (value === null) {
+          throw new RetailerFormatError(`${LABEL}: "${UNITS_SHEET}" — expected a whole number for units, got "${raw}"`)
         }
         sum += value
       }

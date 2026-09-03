@@ -213,8 +213,15 @@ retailer:
   shapes seen so far (both PROVISIONAL — see "Open provisional decisions")
 - `src/lib/currency.ts` — `parseCurrencyToNumber(string)` to parse a raw
   source value (e.g. `"£1,234.56"`, `"-£12.50"`, `"(12.50)"`) into a plain
-  number, and `roundToPence(number)` to avoid floating-point noise before
-  assigning it to `SALES_AMOUNT`
+  number, `roundToPence(number)` to avoid floating-point noise before
+  assigning it to `SALES_AMOUNT`, and `parseIntegerUnits(string)` — every
+  retailer's `SALES_UNITS` parsing should use this, not a bare
+  `Number(...)`. An older real Sephora Store export had every cell,
+  including units (not just money), prefixed with a stray literal `"$"`
+  from an Excel number-format artifact (e.g. `"$4"`, even `"$£114.00"`)
+  — `parseIntegerUnits()` strips that the same way `SALES_AMOUNT` parsing
+  already did, so a future retailer with a similar formatting quirk in
+  its units column won't hit the same bug.
 - `src/lib/rawSheet.ts` — `findHeaderRowIndex()`/`gridRowsFromHeader()`
   for locating a header row that isn't row 1, and
   `discoverColumnGroups()`/`findSubColumnOffset()` for reports with a

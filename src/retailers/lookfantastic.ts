@@ -2,7 +2,7 @@ import type { RawSheet, RetailerParser } from './types'
 import { RetailerFormatError } from './types'
 import type { ParsedRow } from '../schema/targetSchema'
 import { parseYYYYMMDD, weekEndingSunday, formatDDMMYYYY, deriveDateFields } from '../lib/dateUtils'
-import { parseCurrencyToNumber, roundToPence } from '../lib/currency'
+import { parseCurrencyToNumber, parseIntegerUnits, roundToPence } from '../lib/currency'
 
 const LABEL = 'Lookfantastic'
 
@@ -69,8 +69,8 @@ export const lookfantastic: RetailerParser = {
       }
 
       const unitsRaw = cell(row, 'Sale_Volume_Units')
-      const salesUnits = Number(unitsRaw)
-      if (!Number.isFinite(salesUnits) || !Number.isInteger(salesUnits)) {
+      const salesUnits = parseIntegerUnits(unitsRaw)
+      if (salesUnits === null) {
         throw new RetailerFormatError(`${LABEL} row ${rowNumber}: expected a whole number for "Sale_Volume_Units", got "${unitsRaw}"`)
       }
 

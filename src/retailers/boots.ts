@@ -3,7 +3,7 @@ import { RetailerFormatError } from './types'
 import type { ParsedRow } from '../schema/targetSchema'
 import { findHeaderRowIndex, cellToString, groupRunsByLabel } from '../lib/rawSheet'
 import { parseDDMMYYYY, weekEndingFromSaturdayClose, deriveDateFields } from '../lib/dateUtils'
-import { parseCurrencyToNumber, roundToPence } from '../lib/currency'
+import { parseCurrencyToNumber, parseIntegerUnits, roundToPence } from '../lib/currency'
 
 const LABEL = 'Boots'
 const AMOUNT_GROUP_LABEL = 'Total Sales Amount 52 Weeks Rolling'
@@ -89,8 +89,8 @@ export const boots: RetailerParser = {
         if (amount === null) {
           throw new RetailerFormatError(`${LABEL} row ${rowNumber} (${productTitle}): expected a number for sales amount, got "${amountRaw}"`)
         }
-        const units = unitsRaw === '' ? 0 : Number(unitsRaw.replace(/,/g, ''))
-        if (!Number.isFinite(units) || !Number.isInteger(units)) {
+        const units = unitsRaw === '' ? 0 : parseIntegerUnits(unitsRaw)
+        if (units === null) {
           throw new RetailerFormatError(`${LABEL} row ${rowNumber} (${productTitle}): expected a whole number for units, got "${unitsRaw}"`)
         }
 

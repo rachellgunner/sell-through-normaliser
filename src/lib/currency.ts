@@ -21,3 +21,16 @@ export function parseCurrencyToNumber(input: string | number): number | null {
 export function roundToPence(amount: number): number {
   return Math.round(amount * 100) / 100
 }
+
+/**
+ * Parse a units count that may have stray currency-style formatting
+ * around it (seen in a real Sephora export where every cell — including
+ * units, not just money — was prefixed with a literal "$" from an Excel
+ * number-format artifact, e.g. "$4" or "$16"). Returns null if it isn't
+ * a whole number once symbols are stripped.
+ */
+export function parseIntegerUnits(input: string | number): number | null {
+  const value = parseCurrencyToNumber(input)
+  if (value === null || !Number.isInteger(value)) return null
+  return value
+}
