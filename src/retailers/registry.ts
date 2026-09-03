@@ -10,8 +10,7 @@ import { selfridges } from './selfridges'
 import { anthropologie } from './anthropologie'
 
 // Add each new retailer parser here once its mapping is known.
-// All 8 retailers are now identified. Anthropologie isn't being sent
-// consistently yet, so it's still a placeholder. Sephora is split into
+// All 8 retailers are now real, tested parsers. Sephora is split into
 // two entries (Online / Store) since it sends two structurally
 // different files.
 export const RETAILER_PARSERS: RetailerParser[] = [

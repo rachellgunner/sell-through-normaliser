@@ -46,11 +46,11 @@ export function validateRows(rows: NormalizedRow[], skuLevel: boolean): Validati
       })
     }
 
-    if (row.CHANNEL !== 'Online' && row.CHANNEL !== 'Store') {
+    if (row.CHANNEL !== 'Online' && row.CHANNEL !== 'Store' && row.CHANNEL !== 'Unknown') {
       issues.push({
         rowIndex,
         field: 'CHANNEL',
-        message: `CHANNEL must be "Online" or "Store", got "${row.CHANNEL}"`,
+        message: `CHANNEL must be "Online", "Store", or "Unknown", got "${row.CHANNEL}"`,
       })
     }
 
@@ -59,6 +59,14 @@ export function validateRows(rows: NormalizedRow[], skuLevel: boolean): Validati
         rowIndex,
         field: 'STORE_LOCATION',
         message: `Online rows must have STORE_LOCATION and REGION set to "Online"`,
+      })
+    }
+
+    if (row.CHANNEL === 'Unknown' && (row.STORE_LOCATION !== 'Unknown' || row.REGION !== 'Unknown')) {
+      issues.push({
+        rowIndex,
+        field: 'STORE_LOCATION',
+        message: `Unknown-channel rows must have STORE_LOCATION and REGION set to "Unknown" too`,
       })
     }
   })

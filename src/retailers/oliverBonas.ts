@@ -2,32 +2,11 @@ import type { RawSheet, RetailerParser } from './types'
 import { RetailerFormatError } from './types'
 import type { ParsedRow } from '../schema/targetSchema'
 import { findHeaderRowIndex, cellToString } from '../lib/rawSheet'
-import { utcDate, deriveDateFields } from '../lib/dateUtils'
+import { deriveDateFields, lastDayOfMonth, parseMonthAbbreviation } from '../lib/dateUtils'
 import { parseCurrencyToNumber, parseIntegerUnits, roundToPence } from '../lib/currency'
 
 const LABEL = 'Oliver Bonas'
 const REQUIRED_HEADERS = ['PRODUCT GROUP', 'RCODE', 'DESCRIPTION']
-
-const MONTH_ABBR_TO_INDEX0: Record<string, number> = {
-  jan: 0,
-  feb: 1,
-  mar: 2,
-  apr: 3,
-  may: 4,
-  jun: 5,
-  jul: 6,
-  aug: 7,
-  sep: 8,
-  sept: 8,
-  oct: 9,
-  nov: 10,
-  dec: 11,
-}
-
-/** Last day of the given month — used as WEEK_ENDING for these month-grain rows (see README "Open provisional decisions"). */
-function lastDayOfMonth(year: number, monthIndex0: number): Date {
-  return utcDate(year, monthIndex0 + 1, 0)
-}
 
 /** e.g. "Aug-26" -> { year: 2026, monthIndex0: 7 }. Throws if the shape doesn't match. */
 function parseMonthColumnHeader(raw: string): { year: number; monthIndex0: number } {
@@ -35,8 +14,8 @@ function parseMonthColumnHeader(raw: string): { year: number; monthIndex0: numbe
   if (!match) {
     throw new RetailerFormatError(`${LABEL}: expected a "Mon-YY" month header (e.g. "Aug-26"), got "${raw}"`)
   }
-  const monthIndex0 = MONTH_ABBR_TO_INDEX0[match[1].toLowerCase()]
-  if (monthIndex0 === undefined) {
+  const monthIndex0 = parseMonthAbbreviation(match[1])
+  if (monthIndex0 === null) {
     throw new RetailerFormatError(`${LABEL}: unrecognized month abbreviation "${match[1]}" in header "${raw}"`)
   }
   return { year: 2000 + Number(match[2]), monthIndex0 }

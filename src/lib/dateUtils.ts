@@ -17,6 +17,32 @@ function pad2(n: number): string {
   return String(n).padStart(2, '0')
 }
 
+const MONTH_ABBR_TO_INDEX0: Record<string, number> = {
+  jan: 0,
+  feb: 1,
+  mar: 2,
+  apr: 3,
+  may: 4,
+  jun: 5,
+  jul: 6,
+  aug: 7,
+  sep: 8,
+  oct: 9,
+  nov: 10,
+  dec: 11,
+}
+
+/** "Aug" / "August" / "Sept" (matched on the first 3 letters) -> 7 (0-based month index). Returns null if unrecognized. */
+export function parseMonthAbbreviation(text: string): number | null {
+  const key3 = text.trim().toLowerCase().slice(0, 3)
+  return MONTH_ABBR_TO_INDEX0[key3] ?? null
+}
+
+/** Last day of the given month (e.g. lastDayOfMonth(2026, 7) -> 31 Aug 2026). Used as WEEK_ENDING for month-grain retailers. */
+export function lastDayOfMonth(year: number, monthIndex0: number): Date {
+  return utcDate(year, monthIndex0 + 1, 0)
+}
+
 /** Parse a DD/MM/YYYY string into a UTC-midnight Date. Throws if malformed. */
 export function parseDDMMYYYY(input: string): Date {
   const trimmed = input.trim()

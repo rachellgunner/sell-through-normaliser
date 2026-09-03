@@ -11,8 +11,8 @@ browser of whoever uploads a file. Static site, deployable to GitHub Pages.
 
 Framework is complete: upload, retailer selection/auto-detect, preview,
 validation, CSV download, combined-dataset download across multiple
-retailers in one session, access gate. **Per-retailer column mappings are
-mostly still placeholders** — see "Adding a retailer" below.
+retailers in one session, access gate. **All 8 retailers now have real,
+tested parsers** — see "Adding a retailer" below for how each one works.
 
 - **Real, tested parsers**:
   - John Lewis (`src/retailers/johnLewis.ts`) — verified against a real
@@ -50,10 +50,13 @@ mostly still placeholders** — see "Adding a retailer" below.
     `"MONTH"` here, not `"WEEK"` — see "Open provisional decisions" for
     why, and for the `CHANNEL`/`STORE_LOCATION`/`REGION` placeholder
     pending a decision with the business.
-- **All 8 retailers are now identified.** Anthropologie isn't being sent
-  consistently yet, so it's still a placeholder — everything else (6
-  named retailers, 8 parsers since Sephora is split into Online/Store)
-  is real and tested.
+  - Anthropologie (`src/retailers/anthropologie.ts`) — verified against a
+    real 12-row single-month export; summed `SALES_UNITS` ties out
+    exactly to the source file's own Total row, `SALES_AMOUNT` within £1
+    (rounding noise). `PERIOD` is `"MONTH"` here too, and `CHANNEL` is
+    `"Unknown"` — see "Open provisional decisions" for why.
+- **All 8 retailers are now real, tested parsers** (9 parser entries,
+  since Sephora is split into Online/Store).
 
 Two decisions from the John Lewis mapping are marked provisional and may
 need revisiting once more retailers are in (see "Open provisional
@@ -164,10 +167,8 @@ Each retailer has one file in `src/retailers/`, implementing the
   guess or silently drop/blank a field just to make it fit
 
 Once you write a real `parse()`, register it in
-`src/retailers/registry.ts` (already done for the remaining placeholders
-— just replace their `notYetConfigured(...)` stub with the real
-implementation) and add new files there for the 2 still-unidentified
-retailers. Eight fully worked examples to copy patterns from:
+`src/retailers/registry.ts`. Nine fully worked examples to copy patterns
+from (8 retailers, 9 parsers since Sephora is split into Online/Store):
 
 - `src/retailers/johnLewis.ts` — a title row above the real header, and
   non-Monday-start weeks.
@@ -248,6 +249,15 @@ retailers. Eight fully worked examples to copy patterns from:
   weekly Store+Web units actually sum to the stated month total for
   every row, catching a layout drift immediately rather than silently
   mis-summing.
+- `src/retailers/anthropologie.ts` — the simplest of the month-grain
+  retailers: a single sheet per month (no tabs to loop over), with the
+  report period given as free text (`"FY27_CY26 Aug"`) rather than any
+  real date cell. Also the first retailer with genuinely zero channel
+  signal — no Store/Web split, no store column, nothing to infer a split
+  from — so `CHANNEL`/`STORE_LOCATION`/`REGION` are `"Unknown"` rather
+  than a guess (see "Open provisional decisions"). The product
+  description column has no header text of its own; it's found
+  positionally, immediately before the "Sales U" column.
 
 Shared helpers already exist so you don't need to duplicate logic per
 retailer:
@@ -301,9 +311,9 @@ mis-attributing those rows, they're kept and tagged `BRAND: "GROA"`.
 Boots' export mixes in "Groa" too. Every retailer's `parse()` must set
 `BRAND` (defaults to `"UKLASH"` for retailers with no multi-brand signal
 in their source data — confirmed so far for John Lewis, both Sephora
-files, Selfridges, and Oliver Bonas). If more brands turn up in other retailers'
-files, extend `deriveBrand()`-style detection per retailer rather than
-assuming "Groa" is the only other brand.
+files, Selfridges, Oliver Bonas, and Anthropologie). If more brands turn
+up in other retailers' files, extend `deriveBrand()`-style detection per
+retailer rather than assuming "Groa" is the only other brand.
 
 ### ROW_KEY — added beyond the original spec, for avoiding duplicate loads
 
@@ -416,6 +426,18 @@ could be tested now, but the underlying question is explicitly still open
   products), but still an allocation, not a directly reported figure.
   The weekly Store/Web unit detail is discarded (summed into the month
   total) in the meantime, same pattern as Selfridges' per-SKU units.
+  Kept as `"Store"` rather than `"Unknown"` (unlike Anthropologie, below)
+  because there's real, consistent directional signal in the source file
+  — the weekly unit split shows every product at 74–99% store mix — even
+  though it can't be attached to the blended monthly revenue figure.
+- **Anthropologie: `CHANNEL`/`STORE_LOCATION`/`REGION` are `"Unknown"`.**
+  Unlike every other retailer, Anthropologie's file has zero channel
+  signal at all — no Store/Web split anywhere, nothing to infer one
+  from. Forcing a guess into `"Online"` or `"Store"` would be less
+  honest than saying we don't know, so `"Unknown"` was added as a third
+  schema value (2026-09-03) rather than defaulting to one of the other
+  two. If Anthropologie ever starts reporting a channel breakdown, this
+  should switch to a real value like every other retailer.
 
 ## Validation rules
 
@@ -428,8 +450,9 @@ Applied to every normalized row before download is enabled
   some retailers report net-negative weeks where returns exceed sales for
   a given SKU/store, e.g. John Lewis)
 - `PRODUCT_TITLE` blank is only valid for retailers with `skuLevel: false`
-- `CHANNEL` must be `Online` or `Store`; `Online` rows must have
-  `STORE_LOCATION`/`REGION` set to `Online`
+- `CHANNEL` must be `Online`, `Store`, or `Unknown`; `Online` rows must
+  have `STORE_LOCATION`/`REGION` set to `Online`, and `Unknown` rows must
+  have them set to `Unknown`
 
 If a file is missing required source columns entirely, the retailer's
 `parse()` should throw before any rows are produced, rather than
