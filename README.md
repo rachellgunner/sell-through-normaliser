@@ -38,15 +38,22 @@ mostly still placeholders** — see "Adding a retailer" below.
     provisional decisions" for why.
   - Boots (`src/retailers/boots.ts`) — verified against a real
     ~1,050-row export spanning 52 weeks. The original spec guessed Boots
-    would be store-totals-only (`PRODUCT_TITLE: null`), like Oliver
-    Bonas — that guess was wrong, the real export is SKU-level. Also
-    mixes in the "Groa" brand like ASOS, and reports weeks as the closing
-    Saturday of a Sunday-Saturday week (converted the same way as John
-    Lewis's Sunday-start weeks, just from the other end).
-- **All 8 retailers are now identified.** Oliver Bonas and Anthropologie
-  aren't being sent consistently yet, so they're still placeholders —
-  everything else (5 named retailers, 7 parsers since Sephora is split
-  into Online/Store) is real and tested.
+    would be store-totals-only (`PRODUCT_TITLE: null`) — that guess was
+    wrong, the real export is SKU-level. Also mixes in the "Groa" brand
+    like ASOS, and reports weeks as the closing Saturday of a
+    Sunday-Saturday week (converted the same way as John Lewis's
+    Sunday-start weeks, just from the other end).
+  - Oliver Bonas (`src/retailers/oliverBonas.ts`) — verified against a
+    real 13-tab export (one tab per month, Aug 2025–Aug 2026), 78 rows.
+    The original spec's guess that Oliver Bonas would be
+    store-totals-only was also wrong — it's SKU-level too. `PERIOD` is
+    `"MONTH"` here, not `"WEEK"` — see "Open provisional decisions" for
+    why, and for the `CHANNEL`/`STORE_LOCATION`/`REGION` placeholder
+    pending a decision with the business.
+- **All 8 retailers are now identified.** Anthropologie isn't being sent
+  consistently yet, so it's still a placeholder — everything else (6
+  named retailers, 8 parsers since Sephora is split into Online/Store)
+  is real and tested.
 
 Two decisions from the John Lewis mapping are marked provisional and may
 need revisiting once more retailers are in (see "Open provisional
@@ -160,7 +167,7 @@ Once you write a real `parse()`, register it in
 `src/retailers/registry.ts` (already done for the remaining placeholders
 — just replace their `notYetConfigured(...)` stub with the real
 implementation) and add new files there for the 2 still-unidentified
-retailers. Five fully worked examples to copy patterns from:
+retailers. Eight fully worked examples to copy patterns from:
 
 - `src/retailers/johnLewis.ts` — a title row above the real header, and
   non-Monday-start weeks.
@@ -229,6 +236,18 @@ retailers. Five fully worked examples to copy patterns from:
   the original spec guessed Boots would be store-totals-only
   (`PRODUCT_TITLE: null`) — the real file is SKU-level, so don't assume
   the spec's per-retailer guesses hold once real data arrives.
+- `src/retailers/oliverBonas.ts` — one tab per month (13 tabs so far,
+  Aug 2025–Aug 2026) rather than one sheet with many rows, so `parse()`
+  loops over every sheet and concatenates. Units are genuinely reported
+  weekly and split by Store/Web channel, but revenue is only reported
+  once per product per month, already blended across both channels —
+  see "Open provisional decisions" for how that's handled (`PERIOD:
+  "MONTH"` instead of `"WEEK"`, the first retailer where that varies).
+  The month itself is parsed directly from a `"Mon-YY"` header (e.g.
+  `"Aug-26"`) rather than inferred from context. Cross-checks that the
+  weekly Store+Web units actually sum to the stated month total for
+  every row, catching a layout drift immediately rather than silently
+  mis-summing.
 
 Shared helpers already exist so you don't need to duplicate logic per
 retailer:
@@ -282,7 +301,7 @@ mis-attributing those rows, they're kept and tagged `BRAND: "GROA"`.
 Boots' export mixes in "Groa" too. Every retailer's `parse()` must set
 `BRAND` (defaults to `"UKLASH"` for retailers with no multi-brand signal
 in their source data — confirmed so far for John Lewis, both Sephora
-files, and Selfridges). If more brands turn up in other retailers'
+files, Selfridges, and Oliver Bonas). If more brands turn up in other retailers'
 files, extend `deriveBrand()`-style detection per retailer rather than
 assuming "Groa" is the only other brand.
 
@@ -378,6 +397,25 @@ could be tested now, but the underlying question is explicitly still open
   revenue — `parseUnitsByStoreWeek()` already parses the full per-SKU
   detail, so a future product-level version wouldn't need to rebuild
   that part.
+- **Oliver Bonas: `PERIOD` is `"MONTH"`, and `CHANNEL`/`STORE_LOCATION`/
+  `REGION` are placeholders.** Same underlying problem as Selfridges,
+  on a different axis: Oliver Bonas reports units genuinely at
+  product+week+channel (Store vs Web) detail, but revenue only once per
+  product per month, already blended across both channels. Explicitly
+  decided (2026-09-03) to report at the coarser but real month grain
+  (`PERIOD: "MONTH"`, `WEEK_ENDING` = last day of the month) rather than
+  estimate weekly or per-channel revenue — same reasoning as the
+  Selfridges decision. Unlike Selfridges, `PRODUCT_TITLE` is real here
+  (Oliver Bonas's file is genuinely SKU-level), so only the
+  time/channel axis is collapsed, not the product axis.
+  `CHANNEL: "Store"` / `STORE_LOCATION`/`REGION: "All Stores"` are a
+  placeholder pending a conversation with the business about whether to
+  instead split into Store/Web rows with revenue allocated by each
+  channel's real unit share for that product — more defensible than the
+  Selfridges case (same product/price in both channels, not different
+  products), but still an allocation, not a directly reported figure.
+  The weekly Store/Web unit detail is discarded (summed into the month
+  total) in the meantime, same pattern as Selfridges' per-SKU units.
 
 ## Validation rules
 
