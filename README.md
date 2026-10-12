@@ -113,6 +113,15 @@ windows from the same retailer), the combined download keeps only the
 most recently added row per `ROW_KEY` and says how many were collapsed —
 a Snowflake `MERGE` rejects duplicate keys in the source.
 
+Retailers often re-send *and revise* earlier weeks (a part-finished week
+is later restated), so overlapping rows can carry different numbers.
+Files dropped together are processed oldest-first by file date
+(`lastModified`), so the newest file's figures win, and the panel reports
+how many collapsed rows had changed values. Tested against a ~100-file
+historical archive: 76,594 raw rows collapsed to 13,988 unique rows (3.5 MB
+CSV), 753 of the overlaps with revised values. If you're adding files one
+at a time instead, add them oldest-first for the same reason.
+
 Separately, validation now fails any single file that contains the same
 `ROW_KEY` twice (rather than letting one silently overwrite the other).
 This caught a real case in Anthropologie's file: one product name listed
@@ -496,6 +505,30 @@ needs a non-ASCII character preserved in the output). Snowflake's CSV file forma
 `SKIP_BYTE_ORDER_MARK` to `TRUE`, so it strips this BOM automatically on
 load — no special handling needed on the Snowflake side unless that
 default has been overridden.
+
+## Known unsupported file formats
+
+Found while running a ~100-file historical archive through the tool.
+These are correctly rejected (listed as "not added" with a reason) rather
+than guessed at:
+
+- **Oliver Bonas "UKLASH SALES 2025" (Oct/Nov 2025 exports).** An early
+  layout with weekly units only — no £ revenue column and no Store/Web
+  split — so `SALES_AMOUNT` doesn't exist in the file. The later
+  "UKLASH SALES" exports (which re-include those months with revenue) are
+  supported.
+- **Harrods** ("Beauty Weekly Sales Report", "FY 2025 Sales"). Not one of
+  the 8 retailers; no parser exists.
+- **Lookfantastic monthly report** (`monthly_sales_core_UK.csv`: Year,
+  Month_Of_Year, Revenue, Sale_Volume_Units). A different, monthly-grain
+  format from the weekly Lookfantastic file the parser handles.
+- **John Lewis supplier-wide "YTD Sales UKLash_3400…"** (Supplier/Brand
+  summary across all JL suppliers, not UKLASH sell-through).
+
+Format drift already handled: older John Lewis exports store `Week Start
+Date` as a real Excel date (rendered month-first, `"8/3/25"`) instead of
+text `DD/MM/YYYY`; Oliver Bonas's "JAN 26" tab leaves the WEB week-code
+header blank.
 
 ## Known future work
 

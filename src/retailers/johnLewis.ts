@@ -2,7 +2,7 @@ import type { RawSheet, RetailerParser } from './types'
 import { RetailerFormatError } from './types'
 import type { ParsedRow } from '../schema/targetSchema'
 import { findHeaderRowIndex, gridRowsFromHeader } from '../lib/rawSheet'
-import { parseDDMMYYYY, weekEndingFromSundayWeekStart, deriveDateFields } from '../lib/dateUtils'
+import { parseDDMMYYYY, parseMDYY, weekEndingFromSundayWeekStart, deriveDateFields } from '../lib/dateUtils'
 import { parseCurrencyToNumber, parseIntegerUnits, roundToPence } from '../lib/currency'
 
 const LABEL = 'John Lewis'
@@ -73,7 +73,10 @@ export const johnLewis: RetailerParser = {
       if (!weekStartRaw) {
         throw new RetailerFormatError(`${LABEL} row ${rowNumber}: missing "Week Start Date"`)
       }
-      const weekStart = parseDDMMYYYY(weekStartRaw)
+      // Newer exports give text "01/02/2026" (DD/MM/YYYY); older ones store a
+      // real Excel date, which comes through month-first with a 2-digit year
+      // ("8/3/25" = 3 Aug 2025).
+      const weekStart = /^\d{1,2}\/\d{1,2}\/\d{2}$/.test(weekStartRaw) ? parseMDYY(weekStartRaw) : parseDDMMYYYY(weekStartRaw)
       const weekEnding = weekEndingFromSundayWeekStart(weekStart)
 
       const branchName = cell(row, 'Branch Name')

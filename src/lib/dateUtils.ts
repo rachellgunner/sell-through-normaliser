@@ -78,6 +78,27 @@ export function parseYYYYMMDD(input: string): Date {
   return date
 }
 
+/**
+ * Parse a month-first two-digit-year date like "8/3/25" (3 Aug 2025) into a
+ * UTC-midnight Date. This is how SheetJS renders a real Excel date cell that
+ * carries Excel's built-in short-date format, regardless of the locale the
+ * file was made in. Throws if malformed.
+ */
+export function parseMDYY(input: string): Date {
+  const match = /^(\d{1,2})\/(\d{1,2})\/(\d{2})$/.exec(input.trim())
+  if (!match) {
+    throw new Error(`Expected an M/D/YY date, got "${input}"`)
+  }
+  const month = Number(match[1])
+  const day = Number(match[2])
+  const year = 2000 + Number(match[3])
+  const date = utcDate(year, month - 1, day)
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+    throw new Error(`"${input}" is not a valid calendar date`)
+  }
+  return date
+}
+
 export function formatDDMMYYYY(date: Date): string {
   return `${pad2(date.getUTCDate())}/${pad2(date.getUTCMonth() + 1)}/${date.getUTCFullYear()}`
 }

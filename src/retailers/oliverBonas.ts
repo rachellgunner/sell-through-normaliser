@@ -56,7 +56,10 @@ function parseSheet(sheetName: string, grid: unknown[][]): ParsedRow[] {
     const storeLabel = cellToString(groupRow[col])
     const webLabel = cellToString(groupRow[col + 1])
     const webWeekCode = cellToString(headerRow[col + 1])
-    if (storeLabel !== 'STORES' || webLabel !== 'WEB' || webWeekCode !== weekCode) {
+    // The WEB column's own week-code header is sometimes left blank (seen in a
+    // "JAN 26" tab); the STORES/WEB group labels plus the month-total
+    // cross-check below still guard the layout, but a *different* code is an error.
+    if (storeLabel !== 'STORES' || webLabel !== 'WEB' || (webWeekCode !== '' && webWeekCode !== weekCode)) {
       throw new RetailerFormatError(
         `${LABEL}, tab "${sheetName}": expected a "STORES"/"WEB" column pair for week ${weekCode} at columns ${col}/${col + 1} — the report layout may have changed.`,
       )

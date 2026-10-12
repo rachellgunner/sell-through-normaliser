@@ -39,7 +39,10 @@ export function App() {
     setFileError(null)
     setBulkResults([])
     setBulkPending(files.length)
-    for (const file of files) {
+    // Oldest file first, so when files overlap (retailers re-send and revise
+    // earlier weeks) the newest file's figures are the ones that win.
+    const oldestFirst = [...files].sort((a, b) => a.lastModified - b.lastModified)
+    for (const file of oldestFirst) {
       const result = await processFileForBatch(file)
       if (result.status === 'added') {
         addToBatch({
