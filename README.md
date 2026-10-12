@@ -528,7 +528,12 @@ than guessed at:
 Format drift already handled: older John Lewis exports store `Week Start
 Date` as a real Excel date (rendered month-first, `"8/3/25"`) instead of
 text `DD/MM/YYYY`; Oliver Bonas's "JAN 26" tab leaves the WEB week-code
-header blank.
+header blank; older ASOS exports (before Aug 2026) head the option-ID
+column just "Option" with the product name in an unlabeled column after
+it, where current ones have "Option Id" then "Option" (`asos.ts` handles
+both, and throws if the unlabeled column isn't actually blank). ASOS
+reports can also arrive Excel-password-protected inside the zip — the app
+can't read those; unlock and re-save them in Excel first.
 
 ## Known future work
 

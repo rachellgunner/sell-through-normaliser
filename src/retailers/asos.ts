@@ -10,7 +10,11 @@ const LABEL = 'ASOS'
 // Anchor headers for the per-product-per-week report (the "Overview" tab —
 // combined across ASOS's warehouse-split tabs, which report the same
 // figures broken down by fulfilment centre and aren't needed separately).
-const REQUIRED_HEADERS = ['Division', 'Style', 'Option Id', 'Option', 'Supplier Product Reference', 'Retail Sales Units', 'Retail Sales Value']
+// "Option" is in both layouts. Current exports: "Option Id" (the ID) then
+// "Option" (the product name). Older exports (before ~Aug 2026): the ID
+// column is headed just "Option", followed by a column with a blank header
+// holding the product name.
+const REQUIRED_HEADERS = ['Division', 'Style', 'Option', 'Supplier Product Reference', 'Retail Sales Units', 'Retail Sales Value']
 
 const WEEK_LABEL_PATTERN = /Last Week:\s*(\d{1,2}\/\d{1,2}\/\d{4})\s*-\s*(\d{1,2}\/\d{1,2}\/\d{4})/
 
@@ -81,8 +85,18 @@ export const asos: RetailerParser = {
       )
     }
     const headerRow = grid[headerRowIndex]
-    const optionIdCol = headerRow.findIndex((c) => cellToString(c) === 'Option Id')
-    const optionCol = headerRow.findIndex((c) => cellToString(c) === 'Option')
+    let optionIdCol = headerRow.findIndex((c) => cellToString(c) === 'Option Id')
+    let optionCol = headerRow.findIndex((c) => cellToString(c) === 'Option')
+    if (optionIdCol === -1 && optionCol !== -1) {
+      // Older layout: "Option" heads the ID column; the name sits in the next, unlabeled column.
+      optionIdCol = optionCol
+      optionCol = optionIdCol + 1
+      if (cellToString(headerRow[optionCol]) !== '') {
+        throw new RetailerFormatError(
+          `"${overview.name}": expected the column after "Option" to have a blank header (older ASOS layout) holding the product name, but it's headed "${cellToString(headerRow[optionCol])}" — the layout may have changed.`,
+        )
+      }
+    }
     const unitsCol = headerRow.findIndex((c) => cellToString(c) === 'Retail Sales Units')
     const salesCol = headerRow.findIndex((c) => cellToString(c) === 'Retail Sales Value')
     if ([optionIdCol, optionCol, unitsCol, salesCol].includes(-1)) {
