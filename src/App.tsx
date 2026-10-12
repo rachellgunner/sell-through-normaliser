@@ -4,10 +4,12 @@ import { RetailerSelect } from './components/RetailerSelect'
 import { PreviewTable } from './components/PreviewTable'
 import { ValidationErrors } from './components/ValidationErrors'
 import { DownloadButton } from './components/DownloadButton'
-import { BatchPanel, type BatchItem } from './components/BatchPanel'
+import { BatchPanel, batchItemId, type BatchItem } from './components/BatchPanel'
+import { BulkResults } from './components/BulkResults'
 import { RETAILER_PARSERS, autoDetect, getParser } from './retailers/registry'
 import { RetailerFormatError, type RawSheet } from './retailers/types'
 import { parseUploadedFile } from './lib/fileParse'
+import { processFileForBatch, type BulkResult } from './lib/bulkProcess'
 import { validateRows } from './lib/validate'
 import { withRowKeys } from './lib/rowKey'
 import type { NormalizedRow } from './schema/targetSchema'
@@ -17,8 +19,48 @@ export function App() {
   const [retailerKey, setRetailerKey] = useState<string | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
   const [batch, setBatch] = useState<BatchItem[]>([])
+  const [bulkResults, setBulkResults] = useState<BulkResult[]>([])
+  const [bulkPending, setBulkPending] = useState(0)
 
   const suggestion = useMemo(() => (sheet ? autoDetect(sheet) : null), [sheet])
+
+  function addToBatch(item: BatchItem) {
+    setBatch((prev) => [...prev.filter((existing) => existing.id !== item.id), item]) // same file re-added replaces itself
+  }
+
+  async function handleFilesSelected(files: File[]) {
+    if (files.length === 1) {
+      setBulkResults([])
+      await handleFileSelected(files[0])
+      return
+    }
+    setSheet(null)
+    setRetailerKey(null)
+    setFileError(null)
+    setBulkResults([])
+    setBulkPending(files.length)
+    for (const file of files) {
+      const result = await processFileForBatch(file)
+      if (result.status === 'added') {
+        addToBatch({
+          id: batchItemId(result.parser.key, result.fileName),
+          retailerKey: result.parser.key,
+          retailerLabel: result.parser.label,
+          fileName: result.fileName,
+          rows: result.rows,
+        })
+      }
+      setBulkResults((prev) => [...prev, result])
+      setBulkPending((n) => n - 1)
+    }
+  }
+
+  function handleReviewFromBulk(result: Extract<BulkResult, { status: 'needs-attention' }>) {
+    if (!result.sheet) return
+    setFileError(null)
+    setSheet(result.sheet)
+    setRetailerKey(result.parser?.key ?? null)
+  }
 
   async function handleFileSelected(file: File) {
     setFileError(null)
@@ -54,17 +96,15 @@ export function App() {
 
   function handleAddToBatch() {
     if (!normalizedRows || !parser) return
-    setBatch((prev) => [
-      ...prev.filter((item) => item.retailerKey !== parser.key), // replace any existing entry for this retailer
-      { retailerKey: parser.key, retailerLabel: parser.label, fileName: sheet?.fileName ?? '', rows: normalizedRows },
-    ])
+    const fileName = sheet?.fileName ?? ''
+    addToBatch({ id: batchItemId(parser.key, fileName), retailerKey: parser.key, retailerLabel: parser.label, fileName, rows: normalizedRows })
   }
 
-  function handleRemoveFromBatch(retailerKey: string) {
-    setBatch((prev) => prev.filter((item) => item.retailerKey !== retailerKey))
+  function handleRemoveFromBatch(id: string) {
+    setBatch((prev) => prev.filter((item) => item.id !== id))
   }
 
-  const alreadyInBatch = parser ? batch.some((item) => item.retailerKey === parser.key) : false
+  const alreadyInBatch = parser && sheet ? batch.some((item) => item.id === batchItemId(parser.key, sheet.fileName)) : false
 
   return (
     <div className="app">
@@ -75,8 +115,10 @@ export function App() {
 
       <section className="step">
         <h2>1. Upload file</h2>
-        <UploadZone onFileSelected={handleFileSelected} fileName={sheet?.fileName ?? null} />
+        <UploadZone onFilesSelected={handleFilesSelected} fileName={sheet?.fileName ?? null} />
         {fileError && <p className="error-banner">{fileError}</p>}
+        <BulkResults results={bulkResults} pendingCount={bulkPending} onReview={handleReviewFromBulk} />
+
       </section>
 
       {sheet && (

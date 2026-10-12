@@ -1,19 +1,19 @@
 import { useRef, useState, type DragEvent } from 'react'
 
 interface UploadZoneProps {
-  onFileSelected: (file: File) => void
+  onFilesSelected: (files: File[]) => void
   fileName: string | null
 }
 
-export function UploadZone({ onFileSelected, fileName }: UploadZoneProps) {
+export function UploadZone({ onFilesSelected, fileName }: UploadZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
 
   function handleDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault()
     setDragOver(false)
-    const file = event.dataTransfer.files[0]
-    if (file) onFileSelected(file)
+    const files = Array.from(event.dataTransfer.files)
+    if (files.length > 0) onFilesSelected(files)
   }
 
   return (
@@ -33,10 +33,12 @@ export function UploadZone({ onFileSelected, fileName }: UploadZoneProps) {
         ref={inputRef}
         type="file"
         accept=".csv,.xlsx,.xls"
+        multiple
         hidden
         onChange={(e) => {
-          const file = e.target.files?.[0]
-          if (file) onFileSelected(file)
+          const files = Array.from(e.target.files ?? [])
+          if (files.length > 0) onFilesSelected(files)
+          e.target.value = '' // so picking the same file again still fires onChange
         }}
       />
       {fileName ? (
@@ -44,8 +46,9 @@ export function UploadZone({ onFileSelected, fileName }: UploadZoneProps) {
           <strong>{fileName}</strong> selected — click or drop to replace
         </p>
       ) : (
-        <p>Drag a CSV/XLSX file here, or click to browse</p>
+        <p>Drag one or more CSV/XLSX files here, or click to browse</p>
       )}
+      <p className="upload-subhint">Drop several at once to add them all straight to the combined dataset.</p>
     </div>
   )
 }

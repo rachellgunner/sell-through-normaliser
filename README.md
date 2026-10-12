@@ -94,10 +94,33 @@ once at least one file has been added — it isn't shown as an empty box
 up front, since the buttons being above the table already make the
 feature hard to miss without needing a permanently-visible callout.
 
-Adding a retailer that's already in the batch **replaces** its entry
-rather than duplicating it (e.g. if you fix a file and re-add it). The
-batch is in-memory only — it resets on page refresh, matching the rest of
-the app's "nothing persists, nothing leaves the browser" design.
+**Dropping several files at once** skips the one-by-one flow
+(`src/lib/bulkProcess.ts`, `src/components/BulkResults.tsx`): each file is
+parsed, auto-detected, normalized and validated with no confirmation
+step, and every file that passes cleanly is added straight to the combined
+dataset. A file is *not* added (and is listed with the reason, plus a
+"review" link that opens it in the normal single-file flow) if the
+retailer can't be detected with reasonable confidence, two retailers
+match it equally well, parsing fails, or validation finds any issue.
+Dropping a single file still opens the normal preview flow. Size isn't a
+concern: the largest real files are ~4,000 rows, and everything runs in
+the browser.
+
+Batch entries are keyed by retailer **and file name**, so several files
+from one retailer can coexist (ASOS sends one file per week). Re-adding
+the *same* file replaces its entry. When files overlap (e.g. two rolling
+windows from the same retailer), the combined download keeps only the
+most recently added row per `ROW_KEY` and says how many were collapsed —
+a Snowflake `MERGE` rejects duplicate keys in the source.
+
+Separately, validation now fails any single file that contains the same
+`ROW_KEY` twice (rather than letting one silently overwrite the other).
+This caught a real case in Anthropologie's file: one product name listed
+under two Short SKUs (3 units / £55 and 0 / £0), which `anthropologie.ts`
+now sums into one row per product title.
+
+The batch is in-memory only — it resets on page refresh, matching the rest
+of the app's "nothing persists, nothing leaves the browser" design.
 
 ## Local development
 

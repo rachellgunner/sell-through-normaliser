@@ -66,6 +66,7 @@ export const anthropologie: RetailerParser = {
 
     const dataRows = grid.slice(headerRowIndex + 1)
     const rows: ParsedRow[] = []
+    const byProduct = new Map<string, ParsedRow>()
 
     dataRows.forEach((row, i) => {
       const rowNumber = headerRowIndex + 2 + i
@@ -87,7 +88,16 @@ export const anthropologie: RetailerParser = {
         throw new RetailerFormatError(`${LABEL} row ${rowNumber} (${productTitle}): expected a number for "Sales R", got "${revenueRaw}"`)
       }
 
-      rows.push({
+      // The file lists one row per Short SKU, and a product can have several
+      // (e.g. two variants of "UKLASH ICONIC LASHES KIT" with the same
+      // name). Sum them into one row per product title so ROW_KEY stays unique.
+      const existing = byProduct.get(productTitle)
+      if (existing) {
+        existing.SALES_UNITS += salesUnits
+        existing.SALES_AMOUNT = roundToPence(existing.SALES_AMOUNT + salesAmount)
+        return
+      }
+      const newRow: ParsedRow = {
         RETAILER: LABEL,
         BRAND: deriveBrand(productTitle),
         PRODUCT_TITLE: productTitle,
@@ -101,7 +111,9 @@ export const anthropologie: RetailerParser = {
         STORE_LOCATION: 'Unknown',
         REGION: 'Unknown',
         PERIOD: 'MONTH',
-      })
+      }
+      byProduct.set(productTitle, newRow)
+      rows.push(newRow)
     })
 
     return rows

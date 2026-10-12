@@ -14,8 +14,22 @@ export interface ValidationIssue {
  */
 export function validateRows(rows: NormalizedRow[], skuLevel: boolean): ValidationIssue[] {
   const issues: ValidationIssue[] = []
+  const firstRowByKey = new Map<string, number>()
 
   rows.forEach((row, rowIndex) => {
+    // Two rows with the same ROW_KEY in one file would make a Snowflake MERGE
+    // fail (or, worse, silently lose one of them if de-duplicated blindly).
+    const firstIndex = firstRowByKey.get(row.ROW_KEY)
+    if (firstIndex === undefined) {
+      firstRowByKey.set(row.ROW_KEY, rowIndex)
+    } else {
+      issues.push({
+        rowIndex,
+        field: 'ROW_KEY',
+        message: `Duplicate ROW_KEY (same as row ${firstIndex + 1}): ${row.ROW_KEY} — the parser should sum or distinguish these rows`,
+      })
+    }
+
     try {
       parseDDMMYYYY(row.WEEK_ENDING)
     } catch (err) {
