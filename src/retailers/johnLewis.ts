@@ -88,7 +88,11 @@ export const johnLewis: RetailerParser = {
       const storeLocation = isOnline ? 'Online' : branchName
       const region = isOnline ? 'Online' : deriveRegion(branchName)
 
-      const productTitle = cell(row, 'Product Description') || null
+      // Some rows carry a leading "#" or ">" on the name ("#ukbrow-3ml" vs
+      // "ukbrow-3ml" for the same product and week, with identical numbers).
+      // That's decoration, and left in it would give the same product two
+      // different ROW_KEYs and double-count it in Snowflake.
+      const productTitle = cell(row, 'Product Description').replace(/^[#>\s]+/, '') || null
 
       const salesUnits = parseIntStrict(cell(row, 'Sales Units'), rowNumber, 'Sales Units')
 

@@ -537,6 +537,18 @@ can't read those; unlock and re-save them in Excel first.
 
 ## Known future work
 
+- **Renamed products defeat the `ROW_KEY` de-duplication.** The key
+  includes `PRODUCT_TITLE`, so if a retailer renames a product between
+  sends, old and new rows get different keys and both load (double
+  counting). Checked against a ~100-file archive: the only real case was
+  John Lewis prefixing some names with `#` or `>` (e.g. `#ukbrow-3ml` and
+  `ukbrow-3ml` for the same product/week, identical numbers — 173
+  product-weeks, ~£6.5k, Aug–Sep 2025). `johnLewis.ts` now strips that
+  prefix. Any other rename (e.g. ASOS adding "saving 15%" to a gift set)
+  would still slip through; the proper fix is a master product-name
+  mapping table. Re-check after new retailer files arrive:
+  `SELECT WEEK_ENDING, RETAILER, COUNT(*) ... GROUP BY ... ` on
+  retailer+week+store and look for unexpected counts.
 - **Product naming isn't unified across retailers.** Each retailer names
   the same UKLASH product differently (John Lewis's `Product Description`
   is a mix of readable names and SKU-like slugs, e.g. `#uklash-3ml` vs.
