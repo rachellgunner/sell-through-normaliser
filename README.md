@@ -494,6 +494,16 @@ If a file is missing required source columns entirely, the retailer's
 `parse()` should throw before any rows are produced, rather than
 downloading has any blank/zero placeholder values.
 
+## CSV date format
+
+Rows (and the on-screen preview) carry `WEEK_ENDING` as `DD/MM/YYYY`, but
+the downloaded CSV writes it as ISO `YYYY-MM-DD` (`src/lib/csvExport.ts`)
+so Snowflake loads it into a `DATE` column with no `DATE_FORMAT` setting.
+`ROW_KEY` deliberately keeps the `DD/MM/YYYY` text inside it — it's an
+opaque identifier and must never change once data is loaded, or existing
+rows would stop matching on re-upload. The other date-like columns
+(`CALENDAR_YYYY_WW`, `FINANCIAL_YYYY_MM`, ...) are plain text labels.
+
 ## CSV output encoding
 
 `downloadCsv()` in `src/lib/csvExport.ts` prepends a UTF-8 byte-order mark
