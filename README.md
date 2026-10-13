@@ -439,6 +439,15 @@ could be tested now, but the underlying question is explicitly still open
   revenue — `parseUnitsByStoreWeek()` already parses the full per-SKU
   detail, so a future product-level version wouldn't need to rebuild
   that part.
+
+  Two related Selfridges safeguards: (1) their sheets pre-fill all 52
+  weeks, so weeks that haven't happened or been reported yet arrive as
+  zeros — `selfridges.ts` drops everything after the last week in which
+  any store had sales (genuine zero weeks before that are kept), and
+  errors if the whole file is zero. (2) The report year comes only from
+  the filename; a name containing two different years (e.g.
+  `2026-02-24_..._UK Lash 2025.xlsx`) is now rejected rather than
+  guessed, since the wrong choice silently mislabels every week.
 - **Oliver Bonas: `PERIOD` is `"MONTH"`, and `CHANNEL`/`STORE_LOCATION`/
   `REGION` are `"Combined"`.** Same underlying problem as Selfridges,
   on a different axis: Oliver Bonas reports units genuinely at

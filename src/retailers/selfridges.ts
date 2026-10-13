@@ -50,14 +50,21 @@ const MONTH_TOKEN_TO_MONTH_INDEX0: Record<string, number> = {
 
 /** Extract a plausible 4-digit calendar year from the filename (e.g. "UK Lash 2026 (2).xlsx" -> 2026). */
 function extractYearFromFileName(fileName: string): number {
-  const match = /\b(20\d{2})\b/.exec(fileName)
-  if (!match) {
+  const years = [...new Set([...fileName.matchAll(/(?<!\d)(20\d{2})(?!\d)/g)].map((m) => Number(m[1])))]
+  if (years.length === 0) {
     throw new RetailerFormatError(
       `${LABEL}: couldn't find a calendar year in the filename "${fileName}" — the file's own "week01".."week52" labels ` +
         `aren't tied to a year anywhere in the sheet, so this tool relies on the filename containing one (e.g. "... 2026 ...").`,
     )
   }
-  return Number(match[1])
+  if (years.length > 1) {
+    // e.g. "2026-02-24_..._UK Lash 2025.xlsx": guessing which one is the report year would silently mislabel every week.
+    throw new RetailerFormatError(
+      `${LABEL}: the filename "${fileName}" contains more than one year (${years.join(', ')}), so the report year is ambiguous. ` +
+        `Rename the file so it contains just the report year (e.g. "UK Lash 2025.xlsx") and upload it again.`,
+    )
+  }
+  return years[0]
 }
 
 function parseRevenueByStoreWeek(grid: unknown[][], year: number): Map<string, number> {
@@ -184,7 +191,7 @@ export const selfridges: RetailerParser = {
     const revenue = parseRevenueByStoreWeek(revenueGrid, year)
     const units = parseUnitsByStoreWeek(unitsGrid)
 
-    const normalized: ParsedRow[] = []
+    const normalized: { weekNumber: number; row: ParsedRow }[] = []
     for (const [key, amount] of revenue) {
       const [store, weekStr] = key.split('|')
       const weekNumber = Number(weekStr)
@@ -208,19 +215,33 @@ export const selfridges: RetailerParser = {
       }
 
       normalized.push({
-        RETAILER: LABEL,
-        BRAND: 'UKLASH',
-        PRODUCT_TITLE: null,
-        ...deriveDateFields(weekEnding),
-        SALES_AMOUNT: roundToPence(amount),
-        SALES_UNITS: salesUnits,
-        CHANNEL: isOnline ? 'Online' : 'Store',
-        STORE_LOCATION: isOnline ? 'Online' : store,
-        REGION: region,
-        PERIOD: 'WEEK',
+        weekNumber,
+        row: {
+          RETAILER: LABEL,
+          BRAND: 'UKLASH',
+          PRODUCT_TITLE: null,
+          ...deriveDateFields(weekEnding),
+          SALES_AMOUNT: roundToPence(amount),
+          SALES_UNITS: salesUnits,
+          CHANNEL: isOnline ? 'Online' : 'Store',
+          STORE_LOCATION: isOnline ? 'Online' : store,
+          REGION: region,
+          PERIOD: 'WEEK',
+        },
       })
     }
 
-    return normalized
+    // Selfridges pre-fills every week of the year, so weeks that haven't
+    // happened (or haven't been reported yet) arrive as zeros. Those aren't
+    // real zero-sales weeks, so drop everything after the last week in which
+    // any store had sales. Genuine zero weeks before that point are kept.
+    const lastWeekWithSales = Math.max(
+      0,
+      ...normalized.filter((n) => n.row.SALES_UNITS !== 0 || n.row.SALES_AMOUNT !== 0).map((n) => n.weekNumber),
+    )
+    if (lastWeekWithSales === 0) {
+      throw new RetailerFormatError(`${LABEL}: every week shows zero sales in this file, so there's nothing to load.`)
+    }
+    return normalized.filter((n) => n.weekNumber <= lastWeekWithSales).map((n) => n.row)
   },
 }
