@@ -115,12 +115,22 @@ a Snowflake `MERGE` rejects duplicate keys in the source.
 
 Retailers often re-send *and revise* earlier weeks (a part-finished week
 is later restated), so overlapping rows can carry different numbers.
-Files dropped together are processed oldest-first by file date
-(`lastModified`), so the newest file's figures win, and the panel reports
-how many collapsed rows had changed values. Tested against a ~100-file
-historical archive: 76,594 raw rows collapsed to 13,988 unique rows (3.5 MB
-CSV), 753 of the overlaps with revised values. If you're adding files one
-at a time instead, add them oldest-first for the same reason.
+When files overlap, the file that reports the **latest week** wins
+(`src/lib/combine.ts`), regardless of the order files were added or
+dropped in; ties fall back to add order. This is deliberate: an earlier
+version let the last-added file win, and a real load that was dropped
+newest-first (Explorer sorted descending) ended up with the *oldest*
+figures — part-finished weeks and pre-filled zero weeks overwrote the final
+numbers (104 Lookfantastic, 233 Selfridges, 7 Sephora rows). File dates
+can't be used instead: unzipping gives every file the same timestamp. The
+known weak spot: a retailer re-sending a correction for *old* weeks only
+(its latest week is older than a previously-sent file's) would lose to the
+older-sent file — if that ever happens, remove the stale file from the
+combined list. The panel reports how many collapsed rows had changed
+values. Tested against a ~100-file historical archive: 76,594 raw rows
+collapsed to 13,988 unique rows (3.5 MB CSV), 753 of the overlaps with
+revised values, and verified that oldest-first, newest-first and shuffled
+orders give byte-identical output.
 
 Separately, validation now fails any single file that contains the same
 `ROW_KEY` twice (rather than letting one silently overwrite the other).
