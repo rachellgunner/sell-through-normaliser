@@ -3,6 +3,7 @@ import { lookfantastic } from './lookfantastic'
 import { asos } from './asos'
 import { sephoraOnline } from './sephoraOnline'
 import { sephoraStore } from './sephoraStore'
+import { sephoraCombined } from './sephoraCombined'
 import { boots } from './boots'
 import { oliverBonas } from './oliverBonas'
 import { johnLewis } from './johnLewis'
@@ -10,14 +11,15 @@ import { selfridges } from './selfridges'
 import { anthropologie } from './anthropologie'
 
 // Add each new retailer parser here once its mapping is known.
-// All 8 retailers are now real, tested parsers. Sephora is split into
-// two entries (Online / Store) since it sends two structurally
-// different files.
+// All 8 retailers are now real, tested parsers. Sephora has three entries:
+// Online and Store (older exports, two separate files) and Combined (the
+// newer single-sheet export with online + stores together).
 export const RETAILER_PARSERS: RetailerParser[] = [
   lookfantastic,
   asos,
   sephoraOnline,
   sephoraStore,
+  sephoraCombined,
   boots,
   oliverBonas,
   johnLewis,

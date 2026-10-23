@@ -24,6 +24,21 @@ tested parsers** — see "Adding a retailer" below for how each one works.
     real ~4,200-row export (17 stores × products × weeks); summed
     `SALES_UNITS`/`SALES_AMOUNT` tie out exactly to the source file's own
     "Total" column group.
+  - Sephora, combined sheet (`src/retailers/sephoraCombined.ts`) — the
+    newer Sephora export (Oct 2026) puts online and stores in ONE
+    "Weekly Sales By Product" sheet: "Web" and "App" groups, one group
+    per store, then "ECOM" (Web+App), "Retail" (all stores) and "Total"
+    subtotal groups. Recognised by the "Item EAN Code" header and those
+    group labels (the older Online/Store parsers still handle the older
+    layouts). Online rows come from **ECOM** (Web+App combined) as one
+    `Online` line — the same single online line the older report gave;
+    stores come out one row per store. Every row is cross-checked
+    (Web+App = ECOM, stores = Retail, ECOM+Retail = Total) so a column
+    shift fails loudly. Verified against a real 6,284-row export
+    (weeks 1–42 of 2026): for the 16 weeks already loaded from older
+    files, online and per-store totals matched Snowflake to the penny.
+    **Product names differ from the older files** (all caps, no `[code]`
+    suffix) — see "Open provisional decisions".
   - ASOS (`src/retailers/asos.ts`) — verified against a real one-week
     export; sums each product's price-tier rows (Full Price/Promo/etc.)
     into a single row per product.
@@ -484,6 +499,26 @@ could be tested now, but the underlying question is explicitly still open
   done silently. The weekly Store/Web unit detail is discarded (summed
   into the month total) in the meantime, same pattern as Selfridges'
   per-SKU units.
+- **Sephora's combined-sheet export uses different product names from
+  the older Sephora files, so loading it needs one manual step.** The
+  same products appear as e.g. `UKLASH EYELASH SERUM 3ML` (new) vs
+  `Uklash Eyelash Serum 3ml` / `Uklash Eyelash Serum 3ml [130672-0]`
+  (old). `ROW_KEY` includes the name, so weeks present in both (2026
+  weeks 1–16 at the time) would load twice and double-count. Before
+  merging the new file, delete the existing Sephora rows for those weeks
+  in Snowflake (`WHERE RETAILER = 'Sephora' AND WEEK_ENDING >= '2026-01-04'`)
+  — the new file reproduces them exactly, so nothing is lost — and don't
+  drop older Sephora files covering 2026 weeks into the same batch. The
+  new names also need rows in the SKU mapping sheet. One further quirk:
+  Sephora gives two different products the same name (the 30ml and 50ml
+  hair growth serums are both `UKLASH HAIR SERUM GROWTH SERUM`), so a
+  clashing name gets Sephora's own item code appended
+  (`… [UKLASH-HAIR-SERUM-30]`); all other names are untouched. That
+  suffix only applies while both products are in the file — if a future
+  file lists only one, its title would change, which the pre-merge
+  comparison would show as new names for old weeks. Web and App are
+  combined into the single `Online` line (via ECOM) to match the older
+  data; the file does split them, if you ever want that.
 - **Anthropologie: `CHANNEL`/`STORE_LOCATION`/`REGION` are `"Unknown"`.**
   Unlike every other retailer, Anthropologie's file has zero channel
   signal at all — no Store/Web split anywhere, nothing to infer one
