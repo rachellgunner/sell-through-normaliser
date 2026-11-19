@@ -9,6 +9,7 @@ import { oliverBonas } from './oliverBonas'
 import { johnLewis } from './johnLewis'
 import { selfridges } from './selfridges'
 import { anthropologie } from './anthropologie'
+import { next } from './next'
 
 // Add each new retailer parser here once its mapping is known.
 // All 8 retailers are now real, tested parsers. Sephora has three entries:
@@ -25,6 +26,7 @@ export const RETAILER_PARSERS: RetailerParser[] = [
   johnLewis,
   selfridges,
   anthropologie,
+  next,
 ]
 
 export function getParser(key: string): RetailerParser | undefined {

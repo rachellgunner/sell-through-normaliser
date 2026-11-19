@@ -195,6 +195,19 @@ export function weekEndingFromSaturdayClose(saturdayClose: Date): Date {
 }
 
 /**
+ * PROVISIONAL — same rationale as the two helpers above, for retailers
+ * (confirmed so far: Next) that report a Saturday–Friday trading week by
+ * its opening Saturday ("Week Commencing Sat 17 Oct" = Sat 17 – Fri 23 Oct).
+ * The Sunday that follows the closing Friday is 8 days after the opening
+ * Saturday (Sun 25 Oct here). That gives 5/7 days' overlap with our
+ * Monday-start week (Mon 19 – Sun 25: Mon–Fri are the same days), vs 2/7
+ * if the Sunday inside the week (Sun 18) were used.
+ */
+export function weekEndingFromSaturdayWeekStart(saturdayStart: Date): Date {
+  return addDays(saturdayStart, 8)
+}
+
+/**
  * Inverse of calendarYYYYWW: given an ISO-8601 year+week number (Monday-start,
  * week 1 = the week containing the year's first Thursday), return the Sunday
  * that closes that week — i.e. the WEEK_ENDING for a retailer that labels

@@ -70,8 +70,25 @@ tested parsers** — see "Adding a retailer" below for how each one works.
     exactly to the source file's own Total row, `SALES_AMOUNT` within £1
     (rounding noise). `PERIOD` is `"MONTH"` here too, and `CHANNEL` is
     `"Unknown"` — see "Open provisional decisions" for why.
-- **All 8 retailers are now real, tested parsers** (9 parser entries,
-  since Sephora is split into Online/Store).
+  - Next (`src/retailers/next.ts`) — the weekly "UKSkinlabs_BrandWeeklySalesRpt"
+    workbook; reads the **Line Level** tab (one row per product by EAN, one
+    week per file — the Summary tab is only used as a cross-check, Low
+    Cover is ignored). Verified against three real weekly files (weeks
+    commencing 10 Oct, 17 Oct, 7 Nov 2026): nett units/value tie to the
+    Summary tab's brand total exactly, and every row is checked as nett =
+    despatches + returns. `SALES_*` are the **nett** (despatches minus
+    returns) "LW" columns. `PRODUCT_TITLE` is Next's truncated description
+    plus `[EAN]`, because descriptions repeat ("UKL LIP GLOSS" ×2, "UKL
+    BROW PENCIL" ×2, "UKL TUBING MASC" ×2) and would collide on `ROW_KEY`.
+    The week comes from "Week Commencing Sat 17 Oct 2026" (a Saturday–Friday
+    week) → `WEEK_ENDING` is the following Sunday, +8 days (25 Oct), via
+    `weekEndingFromSaturdayWeekStart()`; cross-checked against the "Extract
+    Week" code (W202638). Net-zero products are skipped (as Boots does).
+    **Provisional:** `CHANNEL`/`STORE_LOCATION`/`REGION` are `Online` and
+    values are used as given — see "Open provisional decisions".
+- **All 8 retailers are now real, tested parsers** (10 parser entries,
+  since Sephora is split into Online/Store/Combined and Next was added
+  later).
 
 Two decisions from the John Lewis mapping are marked provisional and may
 need revisiting once more retailers are in (see "Open provisional
@@ -441,6 +458,23 @@ could be tested now, but the underlying question is explicitly still open
   makes more sense than a per-retailer one. If another retailer turns up
   with its own non-Monday-start weeks, check whether it should reuse one
   of these two helpers or needs its own rule.
+- **Next: VAT and the week convention are assumptions.** (1)
+  The report has no channel/store column; "Despatches" (shipped orders)
+  and the "Retail Home" group suggest home delivery, so rows are
+  `Online`/`Online`/`Online` like Boots — confirmed by the business
+  (2026-11-19) to treat all Next sales as online. (2)
+  Values look **VAT-inclusive** (9 units of a £39 serum = £351.00 exactly,
+  i.e. the shelf price) whereas Sephora's are ex-VAT; no conversion is
+  applied — confirm with Next before comparing Next revenue with other
+  retailers. (3) The "Week Commencing" date is taken as the week the
+  figures cover (the "LW" column headings could be read as the week
+  *before*); confirmed by the business, but not by Next. (4) Next's
+  trading-year check (week 1 must fall 24 Jan–7 Feb) is deliberately
+  loose because the exact rule isn't confirmed — tighten it once more
+  years of files are seen. (5) The weekly files carry running "Cum"
+  totals since launch (17 Sep 2026), so missing weeks can be sized:
+  cum(this file) − cum(previous loaded file) − this week = the weeks in
+  between.
 - **`REGION` with no source region column.** John Lewis's file has branch
   names only (e.g. "John Lewis Cardiff"), no actual region field.
   `deriveRegion()` in `src/retailers/johnLewis.ts` currently just strips
